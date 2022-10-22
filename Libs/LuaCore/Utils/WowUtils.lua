@@ -76,3 +76,5 @@ function wowUtils.dump(v)
   _G["lc_dump"] = v
   SlashCmdList["DUMP"]("lc_dump")
 end
+
+return LCWowUtils

@@ -28,4 +28,5 @@ function TestStringUtils:testGenerateUUID()
   lu.assertEquals(#uuid1, 36)
 end
 
+lu.LuaUnit.verbosity = lu.VERBOSITY_VERBOSE
 lu.LuaUnit.run()

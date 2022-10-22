@@ -7,6 +7,22 @@ local qevent_map = {}
 local next_frame_queued = false
 local timer_running = false
 
+WowEventFramework = {}
+
+local m = WowEventFramework
+
+function quantify:registerNextFrame(callback, ...)
+  local uuid = q:generateUUID()
+  next_frame_callbacks[uuid] = {callback = callback, args = {...}}
+  
+  if (not next_frame_queued) then
+    next_frame_queued = true
+    C_Timer.After(0, nextFrame)
+  end
+end
+
+------Handlers-------
+
 local function nextFrame()
   next_frame_queued = false
   
@@ -24,15 +40,7 @@ local function nextFrame()
   end
 end
 
-function quantify:registerNextFrame(callback, ...)
-  local uuid = q:generateUUID()
-  next_frame_callbacks[uuid] = {callback = callback, args = {...}}
-  
-  if (not next_frame_queued) then
-    next_frame_queued = true
-    C_Timer.After(0, nextFrame)
-  end
-end
+
 
 local function timerFired()
   timer_running = false

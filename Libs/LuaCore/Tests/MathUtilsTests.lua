@@ -1,3 +1,5 @@
+require('Libs.LuaTesting.WowGlobalStubs')
+
 local mathUtils = require('Libs.LuaCore.Utils.MathUtils')
 
 local lu = require('luaunit')
@@ -73,4 +75,25 @@ function TestMathUtils:testGetCommaFormattedNumberString()
   lu.assertEquals(res, "1,432.7")
 end
 
+function TestMathUtils:testGetFormattedUnitStringTime()
+  local res = mathUtils.getFormattedUnitString(4000, "time")
+  
+  lu.assertEquals(res, "1h6m40s")
+  
+  res = mathUtils.getFormattedUnitString(4000, "time", true)
+  
+  lu.assertEquals(res, "1h6m")
+  
+  res = mathUtils.getFormattedUnitString(60, "time")
+  
+  lu.assertEquals(res, "1m0s")
+end
+
+function TestMathUtils:testGetFormattedUnitStringMoney()
+  local res = mathUtils.getFormattedUnitString(23000, "money")
+  
+  lu.assertEquals(res, "23000")
+end
+
+lu.LuaUnit.verbosity = lu.VERBOSITY_VERBOSE
 lu.LuaUnit.run()

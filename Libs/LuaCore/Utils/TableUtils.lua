@@ -105,7 +105,7 @@ function tableUtils.contains(t,value)
 end
 
 --#table doesn't work for non-integer indexes
-function q:length(t)
+function tableUtils.length(t)
   local count = 0
   for _,_ in pairs(t) do
     count = count + 1
@@ -170,3 +170,5 @@ function tableUtils.addKeysLeft(a,b)
   
   return a
 end
+
+return LCTableUtils
