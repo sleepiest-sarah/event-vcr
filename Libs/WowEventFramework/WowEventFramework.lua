@@ -1,27 +1,18 @@
+local string_utils = require('Libs.LuaCore.Utils.StringUtils')
+
 local event_map = {}
 local secure_hooks = {}
 local next_frame_callbacks = {}
 local timer_callbacks = {}
-local qevent_map = {}
+local custom_event_map = {}
 
 local next_frame_queued = false
-local timer_running = false
 
 WowEventFramework = {}
 
 local m = WowEventFramework
 
-function quantify:registerNextFrame(callback, ...)
-  local uuid = q:generateUUID()
-  next_frame_callbacks[uuid] = {callback = callback, args = {...}}
-  
-  if (not next_frame_queued) then
-    next_frame_queued = true
-    C_Timer.After(0, nextFrame)
-  end
-end
-
-------Handlers-------
+local sframe = CreateFrame("FRAME")
 
 local function nextFrame()
   next_frame_queued = false
@@ -40,11 +31,7 @@ local function nextFrame()
   end
 end
 
-
-
 local function timerFired()
-  timer_running = false
-  
   local exhausted = {}
   for id,c in pairs(timer_callbacks) do
     if (GetTime() - c.start > c.seconds) then
@@ -60,27 +47,80 @@ local function timerFired()
   
 end
 
-function quantify:registerTimer(callback, seconds, ...)
+function sframe:OnEvent(event, ...)
+  if (event_map[event]) then
+    for _, f in pairs(event_map[event]) do
+      f(event, ...)
+    end
+  end
+end
+
+function m.registerNextFrame(callback, ...)
+  local uuid = string_utils.generateUUID() --for random access deletes
+  next_frame_callbacks[uuid] = {callback = callback, args = {...}}
+  
+  if (not next_frame_queued) then
+    next_frame_queued = true
+    C_Timer.After(0, nextFrame)
+  end
+end
+
+function m.registerTimer(callback, seconds, ...)
   local uuid = q:generateUUID()  --for random access deletes
   timer_callbacks[uuid] = {callback = callback, seconds = seconds, args = {...}, start = GetTime()}
   
-  if (not timer_running) then
-    timer_running = true
-    C_Timer.After(1, timerFired)
+  C_Timer.After(seconds, timerFired)
+end
+
+function m.registerCustomEvent(event,func, ...)
+  if (custom_event_map[event] == nil) then
+    custom_event_map[event] = {}
+  end
+
+  table.insert(custom_event_map[event], {func = func, args = {...}})  
+end
+
+function m.registerEvent(event, func)
+  if not sframe:IsEventRegistered(event) then
+    sframe:RegisterEvent(event)
+  end
+  
+  if (event_map[event] == nil) then
+    event_map[event] = {}
+  end
+    
+  table.insert(event_map[event], func)
+end
+
+function m.unregisterEvent(event, func)
+  if (event_map[event] ~= nil) then
+    for i,f in ipairs(event_map[event]) do
+      if (f == func) then
+        event_map[event][i] = nil
+        break
+      end
+    end
   end
 end
 
-function quantify:registerQEvent(event,func, ...)
-  if (qevent_map[event] == nil) then
-    qevent_map[event] = {}
+function m.hookSecureFunc(func, callback, t)
+  if (not secure_hooks[func]) then
+    t = t or _G
+    
+    secure_hooks[func] = {}
+    hooksecurefunc(t, func, function (...)
+                          for _,cb in pairs(secure_hooks[func]) do
+                            cb(...)
+                          end
+                         end)
   end
-
-  table.insert(qevent_map[event], {func = func, args = {...}})  
+  
+  table.insert(secure_hooks[func], callback)
 end
 
-function quantify:triggerQEvent(event, ...)
-  if (qevent_map[event] ~= nil) then
-    for _, f in pairs(qevent_map[event]) do
+function m.triggerCustomEvent(event, ...)
+  if (custom_event_map[event] ~= nil) then
+    for _, f in pairs(custom_event_map[event]) do
 
       if (#f.args > 0) then
         local args = {unpack(f.args)}
@@ -95,3 +135,5 @@ function quantify:triggerQEvent(event, ...)
     end
   end  
 end
+
+return m
