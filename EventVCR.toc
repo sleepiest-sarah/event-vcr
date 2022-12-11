@@ -1,0 +1,17 @@
+## Interface: 10002
+## Title: Event VCR
+## Author: Sarah Mantovani
+## Version: 0.1a
+## SavedVariables: vReel
+
+embeds.xml
+
+Captures.lua
+
+Nets\Net.lua
+Nets\BasicDungeon.lua
+Nets\Leveling.lua
+Nets\KeystoneDungeon.lua
+Nets\LevelChronicle.lua
+
+EventVcr.lua

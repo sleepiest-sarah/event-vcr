@@ -1,4 +1,4 @@
-local string_utils = require('Libs.LuaCore.Utils.StringUtils')
+local string_utils = require('Libs.LuaCore.Utils.StringUtils') or LCStringUtils
 
 local event_map = {}
 local secure_hooks = {}
@@ -13,6 +13,7 @@ WowEventFramework = {}
 local m = WowEventFramework
 
 local sframe = CreateFrame("FRAME")
+m.sframe = sframe
 
 local function nextFrame()
   next_frame_queued = false
@@ -72,6 +73,8 @@ function m.registerTimer(callback, seconds, ...)
   C_Timer.After(seconds, timerFired)
 end
 
+--TODO passing args in here seems like a hella weird case; think it indicates a very strange design that should probably be avoided
+--not sure why quantify was doing it, but it should have probably been done a different way
 function m.registerCustomEvent(event,func, ...)
   if (custom_event_map[event] == nil) then
     custom_event_map[event] = {}
@@ -92,6 +95,12 @@ function m.registerEvent(event, func)
   table.insert(event_map[event], func)
 end
 
+function m.registerAllEvents(eventList, func)
+  for _,v in ipairs(eventList) do
+    m.registerEvent(v, func)
+  end
+end
+
 function m.unregisterEvent(event, func)
   if (event_map[event] ~= nil) then
     for i,f in ipairs(event_map[event]) do
@@ -101,6 +110,12 @@ function m.unregisterEvent(event, func)
       end
     end
   end
+end
+
+function m.unregisterAllEvents()
+  event_map = {}
+  
+  sframe:UnregisterAllEvents()
 end
 
 function m.hookSecureFunc(func, callback, t)
@@ -119,7 +134,7 @@ function m.hookSecureFunc(func, callback, t)
 end
 
 function m.triggerCustomEvent(event, ...)
-  if (custom_event_map[event] ~= nil) then
+  if (custom_event_map[event]) then
     for _, f in pairs(custom_event_map[event]) do
 
       if (#f.args > 0) then
@@ -135,5 +150,7 @@ function m.triggerCustomEvent(event, ...)
     end
   end  
 end
+
+sframe:SetScript("OnEvent", sframe.OnEvent)
 
 return m

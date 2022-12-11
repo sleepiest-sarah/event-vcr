@@ -64,12 +64,14 @@ function mathUtils.getFormattedUnitString(n,units,abbr)
   elseif (units == "decimal") then
     res = string.format("%.2f",n)
   elseif (units == "integer/hour" or units == "integer/day") then
-    res = q:getShorthandInteger(n)
+    res = mathUtils.getShorthandNumber(n)
   elseif (units == "decimal/hour") then
-    res = q:getShorthandInteger(n,2,true)
+    res = mathUtils.getShorthandNumber(n,2,true)
   elseif (units == "percentage") then
     n = (n - math.floor(n)) > .5 and math.ceil(n) or math.floor(n)
     res = tostring(n).."%"
+  elseif (units == "percent") then
+    res = mathUtils.getFormattedUnitString(n * 100,"percentage")
   elseif (units == "money") then 
     if (abbr and n > 10000) then
       local copper = math.floor(n) % 100
@@ -130,6 +132,63 @@ end
 
 function mathUtils.isNan(n)
   return n ~= n
+end
+
+--mathematically this is reflecting over the y-axis and then translating back into its original position
+--effectively it's just swapping the UR x coord with the UL x coord and the LR x coord with the LL x coord
+function mathUtils.reflectRectInPlace(coords)
+  if (coords.top) then
+    return {ULx = coords.right, ULy = coords.top
+           ,LLx = coords.right, LLy = coords.bottom
+           ,URx = coords.left, URy = coords.top
+           ,LRx = coords.left, LRy = coords.bottom}
+  else
+    return {ULx = coords.URx, ULy = coords.ULy
+           ,LLx = coords.LRx, LLy = coords.LLy
+           ,URx = coords.ULx, URy = coords.URy
+           ,LRx = coords.LLx, LRy = coords.LRy}
+  end
+end
+
+--true if a approximately equals b
+function mathUtils.approxEquals(a,b,precision)
+  precision = precision and (1 / 10^precision) or 0.0001
+  return a <= b+precision and a >= b-precision
+end
+
+function mathUtils.rand(low, high, seed)
+  local state = seed or os.time()
+  
+	local M = 0x7fffffff
+	local A = 48271
+	local Q = M / A
+	local R = M % A
+  
+  local div = state / Q
+  local rem = state % Q
+  
+  local s = rem * A
+  local t = div * R
+  local result = s- t
+  
+  result = result < 0 and result + M or result
+
+  return low + math.floor(result % (1 + high - low))
+end
+
+-- returns a / b or 0 if divide by 0
+function mathUtils.safediv(a,b)
+  a = a or 0
+  b = b or 0
+  local res = a / b
+  return (mathUtils.isInf(res) or mathUtils.isNan(res)) and 0 or res
+end
+
+-- returns a * b converting params to 0 if nil
+function mathUtils.safemult(a,b)
+  a = a or 0
+  b = b or 0
+  return a * b
 end
 
 return mathUtils

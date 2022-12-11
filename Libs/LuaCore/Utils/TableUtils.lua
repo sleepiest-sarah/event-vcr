@@ -12,7 +12,7 @@ function tableUtils.printTable(t, depth)
   for k,v in pairs(t) do
     if (type(v) == "table") then
       print(string.format("%s:", tostring(k)))
-      q:printTable(v, depth + 1)
+      tableUtils.printTable(v, depth + 1)
     else
       print(string.format("%s: %s", tostring(k), tostring(v)))
     end
@@ -33,23 +33,22 @@ function tableUtils.shallowCopy(orig)
     return copy
 end
 
---doesn't handle metadata
-function tableUtils.deepcopy(orig)
+function tableUtils.deepCopy(orig)
     local orig_type = type(orig)
     local copy
     if orig_type == 'table' then
         copy = {}
         for orig_key, orig_value in next, orig, nil do
-            copy[q:deepcopy(orig_key)] = q:deepcopy(orig_value)
+            copy[tableUtils.deepCopy(orig_key)] = tableUtils.deepCopy(orig_value)
         end
-        setmetatable(copy, q:shallowCopy(getmetatable(orig)))
+        setmetatable(copy, tableUtils.shallowCopy(getmetatable(orig)))
     else -- number, string, boolean, etc
         copy = orig
     end
     return copy
 end
 
-function tableUtils.getTableKeys(t)
+function tableUtils.getKeys(t)
   local keys = {}
   
   for k,_ in pairs(t) do
@@ -59,6 +58,15 @@ function tableUtils.getTableKeys(t)
   return keys  
 end
 
+function tableUtils.getValues(t)
+  local values = {}
+  
+  for _,v in pairs(t) do
+    table.insert(values, v)
+  end
+  
+  return values
+end
 
 function tableUtils.getKeyForMaxValue(t,subkey)
   local max = -math.huge
@@ -94,14 +102,35 @@ function tableUtils.getKeyForMinValue(t,subkey)
   return min_key
 end
 
---Blizzard has tContains(table, value)
-function tableUtils.contains(t,value)
-  for _,v in ipairs(t) do
-    if (v == value) then
-      return true
+function tableUtils.getKeysBySortedValues(t, comparator)
+  local values = tableUtils.getValues(t)
+  table.sort(values, comparator)
+  
+  local sorted_keys = {}
+  for k,v in pairs(t) do
+    for i,sorted_val in ipairs(values) do
+      if (v == sorted_val) then
+        if (sorted_keys[i]) then
+          sorted_keys[i+1] = k
+        else
+          sorted_keys[i] = k
+        end
+        break
+      end
     end
   end
-  return false
+  
+  return sorted_keys
+end
+
+--Blizzard has tContains(table, value)
+function tableUtils.contains(t,value)
+  for i,v in ipairs(t) do
+    if (v == value) then
+      return i
+    end
+  end
+  return nil
 end
 
 --#table doesn't work for non-integer indexes
@@ -123,52 +152,64 @@ function tableUtils.keyTable(t)
   return res
 end
 
+--b expected to be the most up to date in the case of missing keys
 function tableUtils.addTables(a,b,shallow)
-  --b expected to be the most up to date in the case of missing keys
+  local res = {}
+  
   for k,v in pairs(b) do
     if (type(v) == "table" and not shallow) then
       if (a[k] == nil) then
         a[k] = {}
       end
-      q:addTables(a[k], v)
-    elseif (tonumber(v) ~= nil) then
+      res[k] = tableUtils.addTables(a[k], v)
+    elseif (tonumber(v)) then
       if (a[k] == nil) then
         a[k] = 0
       end
-      a[k] = a[k] + tonumber(v)
+      res[k] = a[k] + tonumber(v)
     end
   end
   
-  return a
+  return res
 end
 
 function tableUtils.subtractTables(b,a)
+  local res = {}
+  
   for k,v in pairs(b) do
     if (type(v) == "table") then
       if (a[k] == nil) then
         a[k] = {}
       end
-      q:subtractTables(v,a[k])
+      res[k] = tableUtils.subtractTables(v,a[k])
     elseif (tonumber(v) ~= nil) then
       if (a[k] == nil) then
         a[k] = 0
       end
-      a[k] = tonumber(v) - a[k]
+      res[k] = tonumber(v) - a[k]
     end
   end
   
-  return a  
+  return res 
 end
 
 function tableUtils.addKeysLeft(a,b)
   a = a or {}
   for k,v in pairs(b) do
-    if (not a[k]) then
-      a[k] = type(v) == "table" and {} or v
+    if (type(v) == 'table') then
+      a[k] = a[k] or {}
+      tableUtils.addKeysLeft(a[k], v)
+    elseif (a[k] == nil) then
+      a[k] = v
     end
   end
   
   return a
+end
+
+function tableUtils.rand(t)
+  local rand_index = math.random(1,#t)
+  return t[rand_index]
 end
 
 return LCTableUtils

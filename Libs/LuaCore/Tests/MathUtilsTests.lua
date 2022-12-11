@@ -95,5 +95,35 @@ function TestMathUtils:testGetFormattedUnitStringMoney()
   lu.assertEquals(res, "23000")
 end
 
+function TestMathUtils:testRand()
+  local res = mathUtils.rand(1,2)
+  
+  lu.assertTrue(res == 1 or res == 2)
+  
+  res = mathUtils.rand(50,51)
+  lu.assertTrue(res == 50 or res == 51)
+  
+  --value should always be the same for the same seed
+  res = mathUtils.rand(1,3,22)
+  lu.assertEquals(res, 3)
+
+  res = mathUtils.rand(0,1)
+  lu.assertTrue(res == 0 or res == 1)
+end
+
+function TestMathUtils:testSafeDiv()
+  local res = mathUtils.safediv(10,5)
+  
+  lu.assertEquals(res, 2)
+  
+  res = mathUtils.safediv(10,0)
+  
+  lu.assertEquals(res, 0)
+  
+  res = mathUtils.safediv(10, nil)
+  
+  lu.assertEquals(res, 0)
+end
+
 lu.LuaUnit.verbosity = lu.VERBOSITY_VERBOSE
-lu.LuaUnit.run()
+lu.LuaUnit.run('TestMathUtils')

@@ -17,4 +17,4 @@ function TestWowUtils:testGetCurrencyString()
 end
 
 lu.LuaUnit.verbosity = lu.VERBOSITY_VERBOSE
-lu.LuaUnit.run()
+lu.LuaUnit.run('TestWowUtils')
